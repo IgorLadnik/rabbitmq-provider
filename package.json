@@ -2,6 +2,16 @@
 	"name": "rabbitmq-provider",
 	"description": "RabbitMQ Provider",
 	"version": "1.0.0",
+		"dependencies": {
+		"amqplib": "^0.5.5",
+		"buffer": "^5.4.3",
+		"lodash": "^4.17.15",
+		"node-uuid": "^1.4.8",
+		"path": "^0.12.7",
+		"uuid": "^7.0.2"
+	},
+	"devDependencies": {
+	},
 	"scripts": {
 	},
 	"repository": {
