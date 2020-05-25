@@ -1,4 +1,5 @@
 const Connection = require('./connection').Connection;
+const Logger = require('./logger').Logger;
 const { v4: uuidv4 } = require('uuid');
 
 module.exports.PublisherOptions = class PublisherOptions {
@@ -15,7 +16,7 @@ module.exports.Publisher = class Publisher extends Connection {
     po;
 
     static createPublisher = async (po, l) =>
-        await new Publisher(po, l).createChannel();
+        await new Publisher(po, l || new Logger()).createChannel();
 
     constructor(po, l) {
         super(po.connUrl, l);
