@@ -1,0 +1,2 @@
+# rabbitmq-provider
+RabbitMQ Provider
