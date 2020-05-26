@@ -28,7 +28,7 @@ module.exports.Consumer = class Consumer extends Connection {
     }
 
     async createChannel() {
-        await this.createChannelConnection();
+        await super.createChannel();
         return this;
     }
     
@@ -48,20 +48,16 @@ module.exports.Consumer = class Consumer extends Connection {
                         consumerFn(msg, Consumer.getJsonObject(msg), this.bindedToQueue);
                     }
                     catch (err) {
-                        this.l.log(`Error in RabbitMQ Consumer, a consumer supplied callback: ${err}`);
+                        this.l.log(`Error in RabbitMQ Consumer, in consumer supplied callback: ${err}`);
                     }
                 },
                 { noAck: this.co.noAck });
         }
         catch (err) {
-            this.l.log(`Error in Error in RabbitMQ Consumer, \"Consumer.startConsume()\": ${err}`);
+            this.l.log(`Error in RabbitMQ Consumer, \"Consumer.startConsume()\": ${err}`);
         }
 
         return this;
-    }
-
-    stopConsume() {
-
     }
 
     static getJsonObject = (msg) => JSON.parse(`${msg.content}`);

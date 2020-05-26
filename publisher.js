@@ -24,7 +24,7 @@ module.exports.Publisher = class Publisher extends Connection {
     }
 
     async createChannel() {
-        await this.createChannelConnection();
+        await super.createChannel();
         return this;
     }
 
