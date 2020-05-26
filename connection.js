@@ -23,7 +23,6 @@ module.exports.Connection = class Connection {
 
     async createChannelConnection() {
         let conn = await this.connect();
-                   
         try {
             this.channel = await conn.createChannel();
         }

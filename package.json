@@ -2,27 +2,25 @@
 	"name": "rabbitmq-provider",
 	"description": "RabbitMQ Provider",
 	"version": "1.0.0",
-		"dependencies": {
+	"dependencies": {
 		"amqplib": "^0.5.5",
 		"buffer": "^5.4.3",
 		"lodash": "^4.17.15",
 		"node-uuid": "^1.4.8",
-		"path": "^0.12.7",
+		"prompt-sync": "^4.2.0",
 		"uuid": "^7.0.2"
 	},
-	"devDependencies": {
-	},
-	"scripts": {
-	},
+	"devDependencies": {},
+	"scripts": {},
 	"repository": {
-	  "type": "git",
-	  "url": "https://github.com/IgorLadnik/rabbitmq-provider.git"   
+		"type": "git",
+		"url": "https://github.com/IgorLadnik/rabbitmq-provider.git"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"bugs": {
-	  "url": "https://github.com/IgorLadnik/rabbitmq-provider/issues"
+		"url": "https://github.com/IgorLadnik/rabbitmq-provider/issues"
 	},
 	"homepage": "https://github.com/IgorLadnik/rabbitmq-provider"
 }
