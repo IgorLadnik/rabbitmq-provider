@@ -1,5 +1,4 @@
 const Connection = require('./connection').Connection;
-const Logger = require('./logger').Logger;
 const { v4: uuidv4 } = require('uuid');
 
 module.exports.ConsumerOptions = class ConsumerOptions {
@@ -18,7 +17,7 @@ module.exports.Consumer = class Consumer extends Connection {
     bindedToQueue;
 
     static createConsumer = async (co, l) =>
-        await new Consumer(co, l || new Logger()).createChannel();
+        await new Consumer(co, l).createChannel();
 
     constructor(co, l) {
         super(co.connUrl, l);

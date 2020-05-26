@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const amqp = require('amqplib');
+const Logger = require('./logger').Logger;
 
 module.exports.Connection = class Connection {
     connUrl;
@@ -8,7 +9,7 @@ module.exports.Connection = class Connection {
 
     constructor(connUrl, l) {
         this.connUrl = connUrl;
-        this.l = l;
+        this.l = l || new Logger();
     }
 
     async connect() {
