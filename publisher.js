@@ -11,9 +11,6 @@ module.exports.PublisherOptions = class PublisherOptions {
 }
 
 module.exports.Publisher = class Publisher extends Connection {
-    id;
-    po;
-
     static createPublisher = async (po, l) =>
         await new Publisher(po, ).createChannel();
 

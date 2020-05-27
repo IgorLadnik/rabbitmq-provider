@@ -7,10 +7,6 @@ module.exports.Connection = class Connection {
     retryInterval = 1000;
     maxRetries = 3;
 
-    connUrl;
-    channel;
-    l;
-
     constructor(connUrl, l) {
         this.connUrl = connUrl;
         this.l = l || new Logger();

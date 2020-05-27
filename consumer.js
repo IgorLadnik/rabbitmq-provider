@@ -11,11 +11,6 @@ module.exports.ConsumerOptions = class ConsumerOptions {
 }
 
 module.exports.Consumer = class Consumer extends Connection {
-    id;
-    co;
-    isExchange;
-    bindedToQueue;
-
     static createConsumer = async (co, l) =>
         await new Consumer(co, l).createChannel();
 
@@ -24,7 +19,7 @@ module.exports.Consumer = class Consumer extends Connection {
         this.id = `consumer-${uuidv4()}`;
         this.co = co;
         this.isExchange = co.exchange.length > 0 && co.exchangeType.length > 0;
-        this.bindedToQueue = co.queue;
+        this.consumerQueue = co.queue;
     }
 
     async createChannel() {
@@ -45,7 +40,7 @@ module.exports.Consumer = class Consumer extends Connection {
             await this.channel.consume(this.co.queue,
                 (msg) => {
                     try {
-                        consumerFn(msg, Consumer.getJsonObject(msg), this.bindedToQueue);
+                        consumerFn(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
                         this.l.log(`Error in RabbitMQ Consumer, in consumer supplied callback: ${err}`);
