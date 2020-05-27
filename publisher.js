@@ -1,5 +1,6 @@
 const Connection = require('./connection').Connection;
 const { v4: uuidv4 } = require('uuid');
+const _ = require('lodash');
 
 module.exports.PublisherOptions = class PublisherOptions {
     connUrl;
@@ -26,7 +27,7 @@ module.exports.Publisher = class Publisher extends Connection {
     }
 
     publish = (...arr) => {
-        const strJson = Buffer.from(JSON.stringify(arr));
+        const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
         if (this.channel.publish(this.po.exchange, this.po.queue, strJson /*, options*/))
             this.l.log(strJson);
     }
