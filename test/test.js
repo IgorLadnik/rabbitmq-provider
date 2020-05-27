@@ -6,11 +6,7 @@ const Logger = require('../logger').Logger;
 const prompt = require('prompt-sync')();
 
 class Message {
-    publisher;
-    id;
-    text;
-
-    constructor(publisher, id, text) {
+     constructor(publisher, id, text) {
         this.publisher = publisher;
         this.id = id;
         this.text = text;
@@ -29,8 +25,8 @@ const logger = new Logger();
 
 function consumerCallback(msg, jsonPayload, queue, consumerId) {
     logger.log(`consumer: ${consumerId}, exchange: ${msg.fields.exchange}, ` +
-            `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
-            `message: ${JSON.stringify(jsonPayload)}`);
+               `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
+               `message: ${JSON.stringify(jsonPayload)}`);
 
     if (count > maxCount)
         process.exit(0);
