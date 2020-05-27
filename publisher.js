@@ -27,9 +27,14 @@ module.exports.Publisher = class Publisher extends Connection {
     }
 
     publish = (...arr) => {
-        const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
-        if (this.channel.publish(this.po.exchange, this.po.queue, strJson /*, options*/))
-            this.l.log(strJson);
+        try {
+            const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
+            if (this.channel.publish(this.po.exchange, this.po.queue, strJson, this.po))
+                this.l.log(strJson);
+        }
+        catch (err) {
+            this.l.log(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
+        }
     }
 
     publishAsync = (...arr) =>

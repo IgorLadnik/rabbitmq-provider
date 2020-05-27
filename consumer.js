@@ -30,7 +30,7 @@ module.exports.Consumer = class Consumer extends Connection {
     async startConsume(consumerFn) {
         try {
             if (this.isExchange)
-                await this.channel.assertExchange(this.co.exchange, this.co.exchangeType, { durable: this.co.durable });
+                await this.channel.assertExchange(this.co.exchange, this.co.exchangeType, this.co);
 
             await this.channel.assertQueue(this.co.queue, { durable: this.co.durable });
 
@@ -43,13 +43,13 @@ module.exports.Consumer = class Consumer extends Connection {
                         consumerFn(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
-                        this.l.log(`Error in RabbitMQ Consumer, in consumer supplied callback: ${err}`);
+                        this.l.log(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
                     }
                 },
-                { noAck: this.co.noAck });
+                this.co);
         }
         catch (err) {
-            this.l.log(`Error in RabbitMQ Consumer, \"Consumer.startConsume()\": ${err}`);
+            this.l.log(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
         }
 
         return this;
