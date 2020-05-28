@@ -10,8 +10,7 @@ module.exports.Consumer = class Consumer extends Connection {
         await new Consumer(co, fnConsume, fnLog).initialize();
 
     constructor(co, fnConsume, fnLog) {
-        super(co, fnLog);
-        this.id = `consumer-${uuidv4()}`;
+        super('consumer', co, fnLog);
         this.isExchange = co.exchange.length > 0 && co.exchangeType.length > 0;
         this.consumerQueue = co.queue;
         this.fnConsume = fnConsume;
@@ -39,13 +38,13 @@ module.exports.Consumer = class Consumer extends Connection {
                         this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
-                        this.logger.log(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
+                        this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", in callback: ${err}`);
                     }
                 },
                 this.options);
         }
         catch (err) {
-            this.logger.log(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
+            this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", \"Consumer.startConsume()\": ${err}`);
         }
 
         return this;

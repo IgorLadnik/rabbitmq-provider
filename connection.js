@@ -1,5 +1,6 @@
 const amqp = require('amqplib');
 const _ = require('lodash');
+const { v4: uuidv4 } = require('uuid');
 const utils = require('./utils');
 
 module.exports.CommonOptions = class CommonOptions {
@@ -9,12 +10,14 @@ module.exports.CommonOptions = class CommonOptions {
     exchangeType;
     durable;
 
+    id;
     retryIntervalMs;
     maxRetries;
 }
 
 module.exports.Connection = class Connection {
-    constructor(options, fnLog) {
+    constructor(objType, options, fnLog) {
+        this.id = options.id || `${objType}-${uuidv4()}`;
         this.logger = new utils.Logger(fnLog);
         this.options = options;
         this.connUrl = options.connUrl;
@@ -31,7 +34,7 @@ module.exports.Connection = class Connection {
                 conn = await amqp.connect(this.connUrl);
             }
             catch (err) {
-                this.logger.log(`Error in RabbitMQ, \"Connection.initialize()\", connUrl = \"${this.connUrl}\": ${err}`);
+                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", connUrl = \"${this.connUrl}\": ${err}`);
             }
 
             if (!_.isNil(conn)) {
@@ -39,14 +42,14 @@ module.exports.Connection = class Connection {
                     this.channel = await conn.createChannel();
                 }
                 catch (err) {
-                    this.logger.log(`Error in RabbitMQ, \"Connection.initialize()\": ${err}`);
+                    this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\": ${err}`);
                 }
 
                 if (this.isReady()) {
                     conn.on('error', (err) => {
                         // Connection error handler
-                        this.logger.log(`Error in RabbitMQ, \"Connection.initialize()\", connUrl = \"${this.connUrl}\": ${err}. ` +
-                                   `Connection problem.\n\nRECONNECTION to connUrl = \"${this.connUrl}\"\n`);
+                        this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", \"${this.connUrl}\". ${err}. ` +
+                                   `Connection problem.\n\nRECONNECTION by \"${this.id}\" to \"${this.connUrl}\"\n`);
 
                         // Async. reconnection
                         setImmediate(async () => await this.initialize());
@@ -59,7 +62,8 @@ module.exports.Connection = class Connection {
             }
         }
 
-        this.logger.log(`Error in RabbitMQ, \"Connection.initialize()\": failed to connect after max retries.`);
+        this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", \"${this.connUrl}\". ` +
+                        'Failed to connect after max retries.');
     }
 
     stop() {

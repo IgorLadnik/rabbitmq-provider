@@ -1,5 +1,4 @@
 const { CommonOptions, Connection } = require('./connection');
-const { v4: uuidv4 } = require('uuid');
 const _ = require('lodash');
 
 module.exports.PublisherOptions = class PublisherOptions  extends CommonOptions {
@@ -11,8 +10,7 @@ module.exports.Publisher = class Publisher extends Connection {
         await new Publisher(po, fnLog).initialize();
 
     constructor(po, fnLog) {
-        super(po, fnLog);
-        this.id = `publisher-${uuidv4()}`;
+        super('publisher', po, fnLog);
     }
 
     async initialize() {
@@ -24,10 +22,10 @@ module.exports.Publisher = class Publisher extends Connection {
         try {
             const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
             if (this.channel.publish(this.options.exchange, this.options.queue, strJson, this.options))
-                this.logger.log(`RabbitMQ Publisher. Published: ${strJson}`);
+                this.logger.log(`RabbitMQ publisher \"${this.id}\" published: ${strJson}`);
         }
         catch (err) {
-            this.logger.log(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
+            this.logger.log(`Error in RabbitMQ publisher \"${this.id}\", \"Publisher.publish()\": ${err}`);
         }
     }
 
