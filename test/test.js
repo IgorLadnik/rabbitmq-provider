@@ -2,7 +2,6 @@ const _ = require('lodash');
 const Connection = require('../connection').Connection;
 const Consumer = require('../consumer').Consumer;
 const Publisher = require('../publisher').Publisher;
-const Logger = require('../logger').Logger;
 const prompt = require('prompt-sync')();
 
 class Message {
@@ -18,13 +17,11 @@ let user;
 let password;
 let port;
 
-const maxCount = 5;
+const maxCount = Number.MAX_SAFE_INTEGER; //5;
 let count = 0;
 
-const logger = new Logger();
-
 function consumerCallback(msg, jsonPayload, queue, consumerId) {
-    logger.log(`consumer: ${consumerId}, exchange: ${msg.fields.exchange}, ` +
+    console.log(`CONSUMER CALLBACK -> consumer: ${consumerId}, exchange: ${msg.fields.exchange}, ` +
                `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
                `message: ${JSON.stringify(jsonPayload)}`);
 
@@ -33,12 +30,15 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
 }
 
 (async function main() {
-    logger.log('test app started');
+    console.log('test app started');
 
-    host = prompt('host? ');
-    port = prompt('port? ');
-    user = prompt('user? ');
-    password = prompt('password? ');
+    const retryIntervalMs = 5000;
+    const maxRetries = Number.MAX_SAFE_INTEGER;
+
+    // host = prompt('host? ');
+    // port = prompt('port? ');
+    // user = prompt('user? ');
+    // password = prompt('password? ');
 
     host = host || 'localhost';
     port = port || 5672;
@@ -73,12 +73,16 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         queue: consumerQueue,
         exchangeType,
         durable: true,
-        noAck: true
-    }))
-    .startConsume((msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id));
+        noAck: true,
+        retryIntervalMs,
+        maxRetries
+    },
+    (msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id),
+     (msg) => console.log(msg)
+     ));
 
     if (!consumer.isReady()) {
-        logger.log('Error: consumer failure.');
+        console.log('Error: consumer failure.');
         return;
     }
 
@@ -88,15 +92,19 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         queue: '',
         exchangeType,
         durable: true,
-        persistent: true
-    });
+        persistent: true,
+        retryIntervalMs,
+        maxRetries
+    },
+    (msg) => console.log(msg)
+    );
 
     if (!publisher.isReady()) {
-        logger.log('Error: publisher failure.');
+        console.log('Error: publisher failure.');
         return;
     }
 
-    logger.log('1st SESSION');
+    console.log('1st SESSION');
     setInterval(async () => {
         if (!publisher.isReady())
             return;
@@ -111,11 +119,11 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
 
             await Connection.delay(2000);
 
-            logger.log('2nd SESSION');
-            await (await consumer.createChannel())
+            console.log('2nd SESSION');
+            await (await consumer.initialize())
                 .startConsume((msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id));
 
-            await publisher.createChannel();
+            await publisher.initialize();
             await publisher.publishAsync(new Message(publisher.id, ++count, `text${count}`));
 
             publisher = null;

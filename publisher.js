@@ -1,39 +1,33 @@
-const Connection = require('./connection').Connection;
+const { CommonOptions, Connection } = require('./connection');
 const { v4: uuidv4 } = require('uuid');
 const _ = require('lodash');
 
-module.exports.PublisherOptions = class PublisherOptions {
-    connUrl;
-    exchange;
-    queue;
-    exchangeType;
-    durable;
+module.exports.PublisherOptions = class PublisherOptions  extends CommonOptions {
     persistent;
 }
 
 module.exports.Publisher = class Publisher extends Connection {
-    static createPublisher = async (po, l) =>
-        await new Publisher(po, ).createChannel();
+    static createPublisher = async (po, fnLog) =>
+        await new Publisher(po, fnLog).initialize();
 
-    constructor(po, l) {
-        super(po.connUrl, l);
+    constructor(po, fnLog) {
+        super(po, fnLog);
         this.id = `publisher-${uuidv4()}`;
-        this.po = po;
     }
 
-    async createChannel() {
-        await super.createChannel();
+    async initialize() {
+        await super.initialize();
         return this;
     }
 
     publish = (...arr) => {
         try {
             const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
-            if (this.channel.publish(this.po.exchange, this.po.queue, strJson, this.po))
-                this.l.log(strJson);
+            if (this.channel.publish(this.options.exchange, this.options.queue, strJson, this.options))
+                this.fnLog(`PUBLISHER -> ${strJson}`);
         }
         catch (err) {
-            this.l.log(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
+            this.fnLog(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
         }
     }
 

@@ -1,45 +1,64 @@
-const { v4: uuidv4 } = require('uuid');
 const amqp = require('amqplib');
 const _ = require('lodash');
-const Logger = require('./logger').Logger;
+
+module.exports.CommonOptions = class CommonOptions {
+    connUrl;
+    exchange;
+    queue;
+    exchangeType;
+    durable;
+
+    retryIntervalMs;
+    maxRetries;
+}
 
 module.exports.Connection = class Connection {
-    retryInterval = 1000;
-    maxRetries = 3;
-
-    constructor(connUrl, l) {
-        this.connUrl = connUrl;
-        this.l = l || new Logger();
+    constructor(options, fnLog) {
+        this.options = options;
+        this.connUrl = options.connUrl;
+        this.fnLog = fnLog;
+        this.retryIntervalMs = options.retryIntervalMs || 5000;
+        this.maxRetries = options.maxRetries || Number.MAX_SAFE_INTEGER;
+        if (this.maxRetries < 1)
+            this.maxRetries = Number.MAX_SAFE_INTEGER;
     }
 
-    async createChannel() {
+    async initialize() {
         for (let i = 0; i < this.maxRetries; i++) {
             let conn;
             try {
                 conn = await amqp.connect(this.connUrl);
             }
             catch (err) {
-                this.l.log(`Error in RabbitMQ, \"Connection.createChannel()\", connUrl = \"${this.connUrl}\": ${err}`);
+                this.fnLog(`Error in RabbitMQ, \"Connection.initialize()\", connUrl = \"${this.connUrl}\": ${err}`);
             }
 
-            if (_.isNil(conn))
-                continue;
+            if (!_.isNil(conn)) {
+                try {
+                    this.channel = await conn.createChannel();
+                }
+                catch (err) {
+                    this.fnLog(`Error in RabbitMQ, \"Connection.initialize()\": ${err}`);
+                }
 
-            try {
-                this.channel = await conn.createChannel();
-            }
-            catch (err) {
-                this.l.log(`Error in RabbitMQ, \"Connection.createChannel()\": ${err}`);
-            }
+                if (this.isReady()) {
+                    conn.on('error', (err) => {
+                        // Connection error handler
+                        this.fnLog(`Error in RabbitMQ, \"Connection.initialize()\", connUrl = \"${this.connUrl}\": ${err}. ` +
+                                   `Connection problem.\n\nRECONNECTION to connUrl = \"${this.connUrl}\"\n`);
 
-            if (this.isReady())
-                return;
-            else
+                        // Async. reconnection
+                        setImmediate(async () => await this.initialize());
+                    });
+
+                    return;
+                }
+
                 await Connection.delay(this.retryInterval);
+            }
         }
 
-        if (!this.isReady())
-            this.l.log(`Error in RabbitMQ, \"Connection.createChannel()\": failed to connect after max retries.`);
+        this.fnLog(`Error in RabbitMQ, \"Connection.initialize()\": failed to connect after max retries.`);
     }
 
     stop() {

@@ -1,55 +1,51 @@
-const Connection = require('./connection').Connection;
+const { CommonOptions, Connection } = require('./connection');
 const { v4: uuidv4 } = require('uuid');
 
-module.exports.ConsumerOptions = class ConsumerOptions {
-    connUrl;
-    exchange;
-    queue;
-    exchangeType;
-    durable;
+module.exports.ConsumerOptions = class ConsumerOptions extends CommonOptions {
     noAck;
 }
 
 module.exports.Consumer = class Consumer extends Connection {
-    static createConsumer = async (co, l) =>
-        await new Consumer(co, l).createChannel();
+    static createConsumer = async (co, fnConsume, fnLog) =>
+        await new Consumer(co, fnConsume, fnLog).initialize();
 
-    constructor(co, l) {
-        super(co.connUrl, l);
+    constructor(co, fnConsume, fnLog) {
+        super(co, fnLog);
         this.id = `consumer-${uuidv4()}`;
-        this.co = co;
         this.isExchange = co.exchange.length > 0 && co.exchangeType.length > 0;
         this.consumerQueue = co.queue;
+        this.fnConsume = fnConsume;
     }
 
-    async createChannel() {
-        await super.createChannel();
+    async initialize() {
+        await super.initialize();
+        await this.startConsume();
         return this;
     }
     
-    async startConsume(consumerFn) {
+    async startConsume() {
         try {
             if (this.isExchange)
-                await this.channel.assertExchange(this.co.exchange, this.co.exchangeType, this.co);
+                await this.channel.assertExchange(this.options.exchange, this.options.exchangeType, this.options);
 
-            await this.channel.assertQueue(this.co.queue, { durable: this.co.durable });
+            await this.channel.assertQueue(this.consumerQueue, { durable: this.options.durable });
 
             if (this.isExchange)
-                await this.channel.bindQueue(this.co.queue, this.co.exchange, '');
+                await this.channel.bindQueue(this.consumerQueue, this.options.exchange, '');
 
-            await this.channel.consume(this.co.queue,
+            await this.channel.consume(this.consumerQueue,
                 (msg) => {
                     try {
-                        consumerFn(msg, Consumer.getJsonObject(msg), this.consumerQueue);
+                        this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
-                        this.l.log(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
+                        this.fnLog(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
                     }
                 },
-                this.co);
+                this.options);
         }
         catch (err) {
-            this.l.log(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
+            this.fnLog(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
         }
 
         return this;
