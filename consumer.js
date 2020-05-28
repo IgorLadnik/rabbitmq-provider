@@ -39,13 +39,13 @@ module.exports.Consumer = class Consumer extends Connection {
                         this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
-                        this.fnLog(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
+                        this.logger.log(`Error in RabbitMQ, in consumer supplied callback: ${err}`);
                     }
                 },
                 this.options);
         }
         catch (err) {
-            this.fnLog(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
+            this.logger.log(`Error in RabbitMQ, \"Consumer.startConsume()\": ${err}`);
         }
 
         return this;

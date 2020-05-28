@@ -24,10 +24,10 @@ module.exports.Publisher = class Publisher extends Connection {
         try {
             const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
             if (this.channel.publish(this.options.exchange, this.options.queue, strJson, this.options))
-                this.fnLog(`PUBLISHER -> ${strJson}`);
+                this.logger.log(`PUBLISHER -> ${strJson}`);
         }
         catch (err) {
-            this.fnLog(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
+            this.logger.log(`Error in RabbitMQ, \"Publisher.publish()\": ${err}`);
         }
     }
 

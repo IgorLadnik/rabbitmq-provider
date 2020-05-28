@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const Connection = require('../connection').Connection;
+const delayMs = require('../utils');
 const Consumer = require('../consumer').Consumer;
 const Publisher = require('../publisher').Publisher;
 const prompt = require('prompt-sync')();
@@ -117,7 +117,7 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
 
             count = maxCount;
 
-            await Connection.delay(2000);
+            await delayMs(2000);
 
             console.log('2nd SESSION');
             await (await consumer.initialize())
