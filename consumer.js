@@ -33,9 +33,9 @@ module.exports.Consumer = class Consumer extends Connection {
                 await this.channel.bindQueue(this.consumerQueue, this.options.exchange, '');
 
             await this.channel.consume(this.consumerQueue,
-                (msg) => {
+                async (msg) => {
                     try {
-                        this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
+                        await this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
                     }
                     catch (err) {
                         this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", in callback: ${err}`);
