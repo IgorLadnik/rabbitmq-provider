@@ -67,7 +67,7 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         '\n'
     );
 
-    let consumer = await (await Consumer.createConsumer({
+    let consumer = await Consumer.createConsumer({
         connUrl,
         exchange,
         queue: consumerQueue,
@@ -79,7 +79,7 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
     },
     (msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id),
      (msg) => console.log(msg)
-     ));
+     );
 
     if (!consumer.isReady()) {
         console.log('Error: consumer failure.');
