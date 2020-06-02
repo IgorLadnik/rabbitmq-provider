@@ -6,11 +6,14 @@ module.exports.PublisherOptions = class PublisherOptions  extends CommonOptions 
 }
 
 module.exports.Publisher = class Publisher extends Connection {
-    static createPublisher = async (po, fnLog) =>
-        await new Publisher(po, fnLog).initialize();
+    static createPublisher = async (options, fnLog) =>
+        await new Publisher(options, fnLog).initialize();
 
-    constructor(po, fnLog) {
-        super('publisher', po, fnLog);
+    constructor(options, fnLog) {
+        super('publisher', options, fnLog);
+        this.options.persistent = options.persistent || true;
+        if (this.isExchange && this.options.exchangeType === 'direct')
+            this.options.queue = '';
     }
 
     async initialize() {

@@ -22,8 +22,8 @@ let count = 0;
 
 function consumerCallback(msg, jsonPayload, queue, consumerId) {
     console.log(`CONSUMER CALLBACK -> consumer: ${consumerId}, exchange: ${msg.fields.exchange}, ` +
-               `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
-               `message: ${JSON.stringify(jsonPayload)}`);
+                `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
+                `message: ${JSON.stringify(jsonPayload)}`);
 
     if (count > maxCount)
         process.exit(0);
@@ -31,9 +31,6 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
 
 (async function main() {
     console.log('test app started');
-
-    const retryIntervalMs = 5000;
-    const maxRetries = Number.MAX_SAFE_INTEGER;
 
     // host = prompt('host? ');
     // port = prompt('port? ');
@@ -51,32 +48,24 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
     if (!_.isNil(password) && password.length > 0)
         password += '@';
 
-    const connUrl = `amqp://${user}${password}${host}:${port}`;
-
-    const exchange = 'direct-test';
-    const exchangeType = 'direct';
-    const consumerQueue = 'test-queue';
-
-    //'amqp://guest:1237@localhost:5672',
+    const rabbitMQOptions = {
+        connUrl: `amqp://${user}${password}${host}:${port}`, //'amqp://guest:1237@localhost:5672',
+        exchange: 'direct-test',
+        queue: 'test-queue',
+        exchangeType: 'direct',
+        retryIntervalMs: 5000,
+        maxRetries: Number.MAX_SAFE_INTEGER
+    }
 
     console.log(
-        `\nURl: ${connUrl}` +
-        `\nexchange: ${exchange}` +
-        `\nexchangeType: ${exchangeType}` +
-        `\nconsumerQueue: ${consumerQueue}` +
+        `\nURl: ${rabbitMQOptions.connUrl}` +
+        `\nexchange: ${rabbitMQOptions.exchange}` +
+        `\nexchangeType: ${rabbitMQOptions.exchangeType}` +
+        `\nconsumerQueue: ${rabbitMQOptions.queue}` +
         '\n'
     );
 
-    let consumer = await Consumer.createConsumer({
-        connUrl,
-        exchange,
-        queue: consumerQueue,
-        exchangeType,
-        durable: true,
-        noAck: true,
-        retryIntervalMs,
-        maxRetries
-    },
+    let consumer = await Consumer.createConsumer(rabbitMQOptions,
     (msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id),
      (msg) => console.log(msg)
      );
@@ -86,16 +75,7 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         return;
     }
 
-    let publisher = await Publisher.createPublisher({
-        connUrl,
-        exchange,
-        queue: '',
-        exchangeType,
-        durable: true,
-        persistent: true,
-        retryIntervalMs,
-        maxRetries
-    },
+    let publisher = await Publisher.createPublisher(rabbitMQOptions,
     (msg) => console.log(msg)
     );
 
@@ -104,7 +84,6 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         return;
     }
 
-    console.log('1st SESSION');
     setInterval(async () => {
         if (!publisher.isReady())
             return;
@@ -118,13 +97,6 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
             count = maxCount;
 
             await delayMs(2000);
-
-            console.log('2nd SESSION');
-            await (await consumer.initialize())
-                .startConsume((msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id));
-
-            await publisher.initialize();
-            await publisher.publishAsync(new Message(publisher.id, ++count, `text${count}`));
 
             publisher = null;
         }

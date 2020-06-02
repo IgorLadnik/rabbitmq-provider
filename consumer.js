@@ -1,19 +1,17 @@
 const { CommonOptions, Connection } = require('./connection');
-const { v4: uuidv4 } = require('uuid');
 
 module.exports.ConsumerOptions = class ConsumerOptions extends CommonOptions {
     noAck;
 }
 
 module.exports.Consumer = class Consumer extends Connection {
-    static createConsumer = async (co, fnConsume, fnLog) =>
-        await new Consumer(co, fnConsume, fnLog).initialize();
+    static createConsumer = async (options, fnConsume, fnLog) =>
+        await new Consumer(options, fnConsume, fnLog).initialize();
 
-    constructor(co, fnConsume, fnLog) {
-        super('consumer', co, fnLog);
-        this.isExchange = co.exchange.length > 0 && co.exchangeType.length > 0;
-        this.consumerQueue = co.queue;
+    constructor(options, fnConsume, fnLog) {
+        super('consumer', options, fnLog);
         this.fnConsume = fnConsume;
+        this.options.noAck = options.noAck || true;
     }
 
     async initialize() {
@@ -27,15 +25,15 @@ module.exports.Consumer = class Consumer extends Connection {
             if (this.isExchange)
                 await this.channel.assertExchange(this.options.exchange, this.options.exchangeType, this.options);
 
-            await this.channel.assertQueue(this.consumerQueue, { durable: this.options.durable });
+            await this.channel.assertQueue(this.options.queue, { durable: this.options.durable });
 
             if (this.isExchange)
-                await this.channel.bindQueue(this.consumerQueue, this.options.exchange, '');
+                await this.channel.bindQueue(this.options.queue, this.options.exchange, '');
 
-            await this.channel.consume(this.consumerQueue,
+            await this.channel.consume(this.options.queue,
                 async (msg) => {
                     try {
-                        await this.fnConsume(msg, Consumer.getJsonObject(msg), this.consumerQueue);
+                        await this.fnConsume(msg, Consumer.getJsonObject(msg), this.options.queue);
                     }
                     catch (err) {
                         this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", in callback: ${err}`);

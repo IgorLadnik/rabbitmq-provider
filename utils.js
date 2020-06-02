@@ -18,3 +18,8 @@ module.exports.delayMs = (duration) =>
         }, duration)
     );
 
+module.exports.isEmpty = (str) =>
+    _.isNil(str) || str.length === 0;
+
+
+
