@@ -27,7 +27,6 @@ module.exports.Connection = class Connection {
         this.options.exchangeType = options.exchangeType;
         this.options.durable = options.durable;
 
-        this.id = options.id;
         this.retryIntervalMs = options.retryIntervalMs || 5000;
         this.maxRetries = options.maxRetries || Number.MAX_SAFE_INTEGER;
 
