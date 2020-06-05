@@ -8,7 +8,8 @@ module.exports.Publisher = class Publisher extends Connection {
     constructor(options, fnLog) {
         super('publisher', options, fnLog);
         this.options.persistent = options.persistent || true;
-        if (this.isExchange && this.options.exchangeType === 'direct')
+
+        if (this.isExchange)
             this.options.queue = '';
     }
 

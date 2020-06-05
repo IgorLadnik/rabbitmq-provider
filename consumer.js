@@ -8,6 +8,9 @@ module.exports.Consumer = class Consumer extends Connection {
         super('consumer', options, fnLog);
         this.fnConsume = fnConsume;
         this.options.noAck = options.noAck || true;
+
+        if (this.isExchange && this.options.exchangeType === 'fanout')
+            this.options.queue = `queue-${this.id}`;
     }
 
     async initialize() {
