@@ -13,7 +13,9 @@ module.exports.Connection = class Connection {
         this.options.exchange = options.exchange;
         this.options.queue = options.queue;
         this.options.exchangeType = options.exchangeType;
-        this.options.durable = options.durable;
+        this.options.durable = options.durable || true;
+        this.options.noAck = options.noAck || false;
+        this.options.persistent = options.persistent || true;
 
         this.retryIntervalMs = options.retryIntervalMs || 5000;
         this.maxRetries = options.maxRetries || Number.MAX_SAFE_INTEGER;

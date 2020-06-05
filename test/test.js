@@ -20,15 +20,6 @@ let port;
 const maxCount = Number.MAX_SAFE_INTEGER; //5;
 let count = 0;
 
-function consumerCallback(msg, jsonPayload, queue, consumerId) {
-    console.log(`CONSUMER CALLBACK -> consumer: ${consumerId}, exchange: ${msg.fields.exchange}, ` +
-                `routingKey: ${msg.fields.routingKey}, queue: ${queue}, ` +
-                `message: ${JSON.stringify(jsonPayload)}`);
-
-    if (count > maxCount)
-        process.exit(0);
-}
-
 (async function main() {
     console.log('test app started');
 
@@ -50,11 +41,9 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
 
     const rabbitMQOptions = {
         connUrl: `amqp://${user}${password}${host}:${port}`, //'amqp://guest:1237@localhost:5672',
-        exchange: 'direct-test',
-        queue: 'test-queue',
         exchangeType: 'direct',
-        retryIntervalMs: 5000,
-        maxRetries: Number.MAX_SAFE_INTEGER
+        exchange: 'direct-test',
+        queue: 'test-queue'
     }
 
     console.log(
@@ -65,9 +54,29 @@ function consumerCallback(msg, jsonPayload, queue, consumerId) {
         '\n'
     );
 
+    const maxArrayLen = 10;
+    let arrMsg = [];
+
     let consumer = await Consumer.createConsumer(rabbitMQOptions,
-    (msg, jsonPayload, queue) => consumerCallback(msg, jsonPayload, queue, consumer.id),
-     (msg) => console.log(msg)
+    (thisConsumer, msg) => {
+
+            console.log(`CONSUMER CALLBACK -> ${thisConsumer.id}, exchange: ${msg.fields.exchange}, ` +
+                `routingKey: ${msg.fields.routingKey}, queue: ${thisConsumer.options.queue}, ` +
+                `payload: ${JSON.stringify(Consumer.getJsonObject(msg))}`);
+
+            if (arrMsg.length > maxArrayLen) {
+                consumer.ack(arrMsg);
+                arrMsg = [];
+                thisConsumer.logger.log('ACK');
+            }
+            else
+                arrMsg.push(msg);
+
+            if (count > maxCount)
+                process.exit(0);
+        },
+
+        (msg) => console.log(msg)
      );
 
     if (!consumer.isReady()) {

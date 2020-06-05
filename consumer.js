@@ -1,4 +1,6 @@
 const { Connection } = require('./connection');
+const _ = require('lodash');
+const utils = require('./utils');
 
 module.exports.Consumer = class Consumer extends Connection {
     static createConsumer = async (options, fnConsume, fnLog) =>
@@ -7,7 +9,6 @@ module.exports.Consumer = class Consumer extends Connection {
     constructor(options, fnConsume, fnLog) {
         super('consumer', options, fnLog);
         this.fnConsume = fnConsume;
-        this.options.noAck = options.noAck || true;
 
         if (this.isExchange && this.options.exchangeType === 'fanout')
             this.options.queue = `queue-${this.id}`;
@@ -30,9 +31,9 @@ module.exports.Consumer = class Consumer extends Connection {
                 await this.channel.bindQueue(this.options.queue, this.options.exchange, '');
 
             await this.channel.consume(this.options.queue,
-                async (msg) => {
+                async msg => {
                     try {
-                        await this.fnConsume(msg, Consumer.getJsonObject(msg), this.options.queue);
+                        await this.fnConsume(this, msg);
                     }
                     catch (err) {
                         this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", in callback: ${err}`);
@@ -47,7 +48,12 @@ module.exports.Consumer = class Consumer extends Connection {
         return this;
     }
 
-    static getJsonObject = (msg) => JSON.parse(`${msg.content}`);
+    ack(...msgs) {
+        if (!_.isNil(msgs) && msgs.length > 0)
+            utils.flatten(msgs).forEach(msg => this.channel.ack(msg));
+    }
+
+    static getJsonObject = msg => JSON.parse(`${msg.content}`);
 }
 
 
