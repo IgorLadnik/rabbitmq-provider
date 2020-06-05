@@ -1,8 +1,4 @@
-const { CommonOptions, Connection } = require('./connection');
-
-module.exports.ConsumerOptions = class ConsumerOptions extends CommonOptions {
-    noAck;
-}
+const { Connection } = require('./connection');
 
 module.exports.Consumer = class Consumer extends Connection {
     static createConsumer = async (options, fnConsume, fnLog) =>

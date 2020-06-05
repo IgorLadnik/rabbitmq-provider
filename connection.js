@@ -3,18 +3,6 @@ const _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
 const utils = require('./utils');
 
-module.exports.CommonOptions = class CommonOptions {
-    connUrl;
-    exchange;
-    queue;
-    exchangeType;
-    durable;
-
-    id;
-    retryIntervalMs;
-    maxRetries;
-}
-
 module.exports.Connection = class Connection {
     constructor(objType, options, fnLog) {
         this.id = options.id || `${objType}-${uuidv4()}`;

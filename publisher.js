@@ -1,9 +1,5 @@
-const { CommonOptions, Connection } = require('./connection');
-const _ = require('lodash');
-
-module.exports.PublisherOptions = class PublisherOptions  extends CommonOptions {
-    persistent;
-}
+const { Connection } = require('./connection');
+const utils = require('./utils');
 
 module.exports.Publisher = class Publisher extends Connection {
     static createPublisher = async (options, fnLog) =>
@@ -23,7 +19,7 @@ module.exports.Publisher = class Publisher extends Connection {
 
     publish = (...arr) => {
         try {
-            const strJson = Buffer.from(JSON.stringify(_.flatten(arr)));
+            const strJson = Buffer.from(JSON.stringify(utils.flatten(arr)));
             if (this.channel.publish(this.options.exchange, this.options.queue, strJson, this.options))
                 this.logger.log(`RabbitMQ publisher \"${this.id}\" published: ${strJson}`);
         }
