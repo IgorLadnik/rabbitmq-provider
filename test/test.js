@@ -20,6 +20,10 @@ let port;
 const maxCount = Number.MAX_SAFE_INTEGER; //5;
 let count = 0;
 
+class Logger {
+    log = (msg) => console.log(msg);
+}
+
 (async function main() {
     console.log('test app started');
 
@@ -54,29 +58,16 @@ let count = 0;
         '\n'
     );
 
-    const maxArrayLen = 10;
-    let arrMsg = [];
-
     let consumer = await Consumer.createConsumer(rabbitMQOptions,
-    (thisConsumer, msg) => {
-
+        new Logger(),
+        (thisConsumer, msg) => {
             console.log(`CONSUMER CALLBACK -> ${thisConsumer.id}, exchange: ${msg.fields.exchange}, ` +
                 `routingKey: ${msg.fields.routingKey}, queue: ${thisConsumer.options.queue}, ` +
                 `payload: ${JSON.stringify(Consumer.getJsonObject(msg))}`);
 
-            if (arrMsg.length > maxArrayLen) {
-                consumer.ack(arrMsg);
-                arrMsg = [];
-                thisConsumer.logger.log('ACK');
-            }
-            else
-                arrMsg.push(msg);
-
             if (count > maxCount)
                 process.exit(0);
-        },
-
-        (msg) => console.log(msg)
+        }
      );
 
     if (!consumer.isReady()) {
@@ -84,9 +75,7 @@ let count = 0;
         return;
     }
 
-    let publisher = await Publisher.createPublisher(rabbitMQOptions,
-    (msg) => console.log(msg)
-    );
+    let publisher = await Publisher.createPublisher(rabbitMQOptions, new Logger());
 
     if (!publisher.isReady()) {
         console.log('Error: publisher failure.');

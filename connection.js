@@ -1,12 +1,13 @@
 const amqp = require('amqplib');
 const _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
+const { Logger } = require('./logger');
 const utils = require('./utils');
 
 module.exports.Connection = class Connection {
-    constructor(objType, options, fnLog) {
+    constructor(objType, options, externalLogger) {
         this.id = options.id || `${objType}-${uuidv4()}`;
-        this.logger = new utils.Logger(fnLog);
+        this.logger = new Logger(externalLogger);
 
         this.options = { };
         this.options.connUrl = options.connUrl;

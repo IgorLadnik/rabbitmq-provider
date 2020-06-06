@@ -3,12 +3,18 @@ const _ = require('lodash');
 const utils = require('./utils');
 
 module.exports.Consumer = class Consumer extends Connection {
-    static createConsumer = async (options, fnConsume, fnLog) =>
-        await new Consumer(options, fnConsume, fnLog).initialize();
+    static createConsumer = async (options, externalLogger, fnConsume) =>
+        await new Consumer(options, externalLogger, fnConsume).initialize();
 
-    constructor(options, fnConsume, fnLog) {
-        super('consumer', options, fnLog);
-        this.fnConsume = fnConsume;
+    messages = [];
+    chunkIntervalId;
+
+    constructor(options, externalLogger, fnConsume) {
+        super('consumer', options, externalLogger);
+
+        this.fnConsume = _.isNil(fnConsume)
+            ? (thisConsumer, msg) => this.messages = [...this.messages, msg]
+            : fnConsume;
 
         if (this.isExchange && this.options.exchangeType === 'fanout')
             this.options.queue = `queue-${this.id}`;
@@ -54,6 +60,49 @@ module.exports.Consumer = class Consumer extends Connection {
     }
 
     static getJsonObject = msg => JSON.parse(`${msg.content}`);
+
+    startProcessChunks(fnProcessChunk, timeoutMs) {
+        this.chunkIntervalId = setInterval(() => {
+            if (this.messages.length === 0)
+                return;
+
+            let arrPayloads = [];
+            let arrRedelivered = [];
+            utils.flatten(this.messages).forEach(msg => {
+                const payloads = utils.flatten(Consumer.getJsonObject(msg));
+                const redelivered = msg.fields.redelivered;
+                payloads.forEach(payload => {
+                    arrPayloads = [...arrPayloads, payload];
+                    arrRedelivered = [...arrRedelivered, redelivered];
+                });
+            });
+
+            //TEMP-------------------------------------------------------------------------------------
+            for (let i = 0; i < arrPayloads.length; i++)
+                this.logger.log(`${this.id} ` +
+                    `message: ${JSON.stringify(arrPayloads[i])}, redelivered = ${arrRedelivered[i]}`);
+            //TEMP-------------------------------------------------------------------------------------
+
+            try {
+                fnProcessChunk(arrPayloads);
+                this.messages.forEach(msg => this.ack(msg));
+            }
+            catch (err) {
+                this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", \"fnProcessChunk()\": ${err}`);
+            }
+            finally {
+                this.messages = [];
+            }
+        },
+        timeoutMs);
+    }
+
+    stopProcessChunks() {
+        if (!_.isNil(this.chunkIntervalId)) {
+            clearInterval(this.chunkIntervalId);
+            this.chunkIntervalId = null;
+        }
+    }
 }
 
 

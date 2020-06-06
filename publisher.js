@@ -2,11 +2,11 @@ const { Connection } = require('./connection');
 const utils = require('./utils');
 
 module.exports.Publisher = class Publisher extends Connection {
-    static createPublisher = async (options, fnLog) =>
-        await new Publisher(options, fnLog).initialize();
+    static createPublisher = async (options, externalLogger) =>
+        await new Publisher(options, externalLogger).initialize();
 
-    constructor(options, fnLog) {
-        super('publisher', options, fnLog);
+    constructor(options, externalLogger) {
+        super('publisher', options, externalLogger);
 
         if (this.isExchange)
             this.options.queue = '';
