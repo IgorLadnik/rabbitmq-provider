@@ -61,6 +61,10 @@ module.exports.Consumer = class Consumer extends Connection {
 
     static getJsonObject = msg => JSON.parse(`${msg.content}`);
 
+    static getPayloads = msg => utils.flatten(Consumer.getJsonObject(msg));
+
+    static isRedelivered = msg => msg.fields.redelivered;
+
     startProcessChunks(fnProcessChunk, timeoutMs) {
         this.chunkIntervalId = setInterval(() => {
             if (this.messages.length === 0)
@@ -69,8 +73,8 @@ module.exports.Consumer = class Consumer extends Connection {
             let arrPayloads = [];
             let arrRedelivered = [];
             utils.flatten(this.messages).forEach(msg => {
-                const payloads = utils.flatten(Consumer.getJsonObject(msg));
-                const redelivered = msg.fields.redelivered;
+                const payloads = Consumer.getPayloads(msg);
+                const redelivered = Consumer.isRedelivered(msg);
                 payloads.forEach(payload => {
                     arrPayloads = [...arrPayloads, payload];
                     arrRedelivered = [...arrRedelivered, redelivered];
