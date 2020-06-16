@@ -37,14 +37,12 @@ class Logger {
     user = user || 'guest';
     password = password || '1237'
 
-    if (!_.isNil(user) && user.length > 0)
-        user += ':';
-
-    if (!_.isNil(password) && password.length > 0)
-        password += '@';
-
     const rabbitMQOptions = {
-        connUrl: `amqp://${user}${password}${host}:${port}`, //'amqp://guest:1237@localhost:5672',
+        //connUrl: 'amqp://guest:1237@localhost:5672',
+        host,
+        port,
+        user,
+        password,
         exchangeType: 'direct',
         exchange: 'direct-test',
         queue: 'test-queue'

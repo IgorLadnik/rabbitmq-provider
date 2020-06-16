@@ -11,17 +11,7 @@ module.exports.Connection = class Connection {
 
         this.options = { };
 
-        this.options.connUrl = options.connUrl;
-        if (_.isNil(this.options.connUrl)) {
-            try {
-                this.options.connUrl = `amqp://${options.user}${options.password}${options.host}:${options.port}`; //'amqp://guest:1237@localhost:5672',
-            }
-            catch (err) {
-                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.ctor()\", failed to create connUrl: ${err}`);
-                return;
-            }
-        }
-
+        this.options.connUrl = this.getConnUrl(options);
         this.options.exchange = options.exchange;
         this.options.queue = options.queue;
         this.options.exchangeType = options.exchangeType;
@@ -38,6 +28,29 @@ module.exports.Connection = class Connection {
         this.isExchange = !utils.isEmpty(this.options.exchange) && !utils.isEmpty(this.options.exchangeType);
         if (this.isExchange)
             this.options.exchangeType = this.options.exchangeType.toLowerCase();
+    }
+
+    getConnUrl(options) {
+        let connUrl = options.connUrl;
+        if (_.isNil(connUrl)) {
+            try {
+                let user = options.user;
+                let password = options.password;
+                if (!utils.isEmpty(user))
+                    user += ':';
+
+                if (!utils.isEmpty(password))
+                    password += '@';
+
+                connUrl = `amqp://${user}${password}${options.host}:${options.port}`;
+            }
+            catch (err) {
+                connUrl = null;
+                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.ctor()\", failed to create connUrl: ${err}`);
+            }
+        }
+
+        return connUrl;
     }
 
     async initialize() {
