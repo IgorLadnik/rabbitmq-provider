@@ -10,6 +10,17 @@ module.exports.Connection = class Connection {
         this.logger = new Logger(externalLogger);
 
         this.options = { };
+
+        if (_.isNil(options.connUrl)) {
+            try {
+                this.options.connUrl = `amqp://${options.user}${options.password}${options.host}:${options.port}`; //'amqp://guest:1237@localhost:5672',
+            }
+            catch (err) {
+                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.ctor()\", failed to create connUrl: ${err}`);
+                return;
+            }
+        }
+
         this.options.connUrl = options.connUrl;
         this.options.exchange = options.exchange;
         this.options.queue = options.queue;
