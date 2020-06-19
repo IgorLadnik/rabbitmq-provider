@@ -62,7 +62,7 @@ module.exports.Connection = class Connection {
                 this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", connUrl = \"${this.options.connUrl}\": ${err}`);
             }
 
-            if (!_.isNil(conn)) {
+            if (!_.isNil(this.conn)) {
                 try {
                     this.channel = await this.conn.createChannel();
                 }

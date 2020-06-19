@@ -7,8 +7,8 @@ module.exports.delayMs = (duration) =>
         }, duration)
     );
 
-module.exports.isEmpty = (str) =>
-    _.isNil(str) || str.length === 0;
+module.exports.isEmpty = (item) =>
+    _.isNil(item) || item.length === 0;
 
 module.exports.flatten = function flatten(arr, result = []) {
     for (let i = 0, length = arr.length; i < length; i++) {

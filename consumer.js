@@ -55,7 +55,7 @@ module.exports.Consumer = class Consumer extends Connection {
     }
 
     ack(...msgs) {
-        if (!_.isNil(msgs) && msgs.length > 0)
+        if (!utils.isEmpty(msgs))
             utils.flatten(msgs).forEach(msg => this.channel.ack(msg));
     }
 
@@ -88,7 +88,9 @@ module.exports.Consumer = class Consumer extends Connection {
             //TEMP-------------------------------------------------------------------------------------
 
             try {
-                fnProcessChunk(arrPayloads);
+                if (!_.isNil(fnProcessChunk))
+                    fnProcessChunk(arrPayloads);
+
                 this.messages.forEach(msg => this.ack(msg));
             }
             catch (err) {
@@ -99,6 +101,8 @@ module.exports.Consumer = class Consumer extends Connection {
             }
         },
         timeoutMs);
+
+        return this;
     }
 
     stopProcessChunks() {

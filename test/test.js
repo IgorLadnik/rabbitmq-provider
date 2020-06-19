@@ -56,17 +56,20 @@ class Logger {
         '\n'
     );
 
-    let consumer = await Consumer.createConsumer(rabbitMQOptions,
+    let consumer = (await Consumer.createConsumer(rabbitMQOptions,
         new Logger(),
         (thisConsumer, msg) => {
             console.log(`CONSUMER CALLBACK -> ${thisConsumer.id}, exchange: ${msg.fields.exchange}, ` +
                 `routingKey: ${msg.fields.routingKey}, queue: ${thisConsumer.options.queue}, ` +
                 `payload: ${JSON.stringify(Consumer.getJsonObject(msg))}`);
 
+            thisConsumer.messages = [...thisConsumer.messages, msg];
+
             if (count > maxCount)
                 process.exit(0);
         }
-     );
+     ))
+    .startProcessChunks(payloads => { console.log('ACK') }, 5000);
 
     if (!consumer.isReady()) {
         console.log('Error: consumer failure.');
