@@ -55,9 +55,8 @@ module.exports.Connection = class Connection {
 
     async initialize() {
         for (let i = 0; i < this.maxRetries; i++) {
-            let conn;
             try {
-                conn = await amqp.connect(this.options.connUrl);
+                this.conn = await amqp.connect(this.options.connUrl);
             }
             catch (err) {
                 this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", connUrl = \"${this.options.connUrl}\": ${err}`);
@@ -65,14 +64,14 @@ module.exports.Connection = class Connection {
 
             if (!_.isNil(conn)) {
                 try {
-                    this.channel = await conn.createChannel();
+                    this.channel = await this.conn.createChannel();
                 }
                 catch (err) {
                     this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\": ${err}`);
                 }
 
                 if (this.isReady()) {
-                    conn.on('error', (err) => {
+                    this.conn.on('error', (err) => {
                         // Connection error handler
                         this.logger.log(
                             `Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", \"${this.options.connUrl}\". ${err}. ` +
@@ -96,6 +95,7 @@ module.exports.Connection = class Connection {
     stop() {
         if (this.isReady()) {
             this.channel.close();
+            this.conn.close();
             this.channel = null;
         }
     }
