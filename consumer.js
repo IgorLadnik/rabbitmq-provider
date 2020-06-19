@@ -3,14 +3,14 @@ const _ = require('lodash');
 const utils = require('./utils');
 
 module.exports.Consumer = class Consumer extends Connection {
-    static createConsumer = async (options, externalLogger, fnConsume) =>
-        await new Consumer(options, externalLogger, fnConsume).initialize();
+    static createConsumer = async (options, externalLogger, fnConsume, isVerbose = true) =>
+        await new Consumer(options, externalLogger, fnConsume, isVerbose).initialize();
 
     messages = [];
     chunkIntervalId;
 
-    constructor(options, externalLogger, fnConsume) {
-        super('consumer', options, externalLogger);
+    constructor(options, externalLogger, fnConsume, isVerbose = true) {
+        super('consumer', options, externalLogger, isVerbose);
 
         this.fnConsume = _.isNil(fnConsume)
             ? (thisConsumer, msg) => this.messages = [...this.messages, msg]
@@ -42,13 +42,13 @@ module.exports.Consumer = class Consumer extends Connection {
                         await this.fnConsume(this, msg);
                     }
                     catch (err) {
-                        this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", in callback: ${err}`);
+                        this.logger.log(`Error in RabbitMQ consumer ${this.id}, in callback: ${err}`);
                     }
                 },
                 this.options);
         }
         catch (err) {
-            this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", \"Consumer.startConsume()\": ${err}`);
+            this.logger.log(`Error in RabbitMQ consumer ${this.id}, Consumer.startConsume(): ${err}`);
         }
 
         return this;
@@ -66,6 +66,8 @@ module.exports.Consumer = class Consumer extends Connection {
     static isRedelivered = msg => msg.fields.redelivered;
 
     startProcessChunks(fnProcessChunk, timeoutMs) {
+        this.logger.log(`RabbitMQ consumer ${this.id}: startProcessChunks() called`);
+
         this.chunkIntervalId = setInterval(() => {
             if (this.messages.length === 0)
                 return;
@@ -81,20 +83,26 @@ module.exports.Consumer = class Consumer extends Connection {
                 });
             });
 
-            //TEMP-------------------------------------------------------------------------------------
-            for (let i = 0; i < arrPayloads.length; i++)
-                this.logger.log(`${this.id} ` +
-                    `message: ${JSON.stringify(arrPayloads[i])}, redelivered = ${arrRedelivered[i]}`);
-            //TEMP-------------------------------------------------------------------------------------
+            if (this.isVerbose)
+                for (let i = 0; i < arrPayloads.length; i++)
+                    this.logger.log(`RabbitMQ consumer ${this.id}: ` +
+                        `message: ${JSON.stringify(arrPayloads[i])}, redelivered = ${arrRedelivered[i]}`);
 
             try {
-                if (!_.isNil(fnProcessChunk))
+                if (!_.isNil(fnProcessChunk)) {
                     fnProcessChunk(arrPayloads);
 
+                    if (this.isVerbose)
+                        this.logger.log(`RabbitMQ consumer ${this.id}: processing chunks called`);
+                }
+
                 this.messages.forEach(msg => this.ack(msg));
+
+                if (this.isVerbose)
+                    this.logger.log(`RabbitMQ consumer ${this.id}: Ack. ${this.messages.length} messages`);
             }
             catch (err) {
-                this.logger.log(`Error in RabbitMQ consumer \"${this.id}\", \"fnProcessChunk()\": ${err}`);
+                this.logger.log(`Error in RabbitMQ consumer ${this.id}, fnProcessChunk(): ${err}`);
             }
             finally {
                 this.messages = [];
@@ -106,6 +114,8 @@ module.exports.Consumer = class Consumer extends Connection {
     }
 
     stopProcessChunks() {
+        this.logger.log(`RabbitMQ consumer ${this.id}: stopProcessChunks() called`);
+
         if (!_.isNil(this.chunkIntervalId)) {
             clearInterval(this.chunkIntervalId);
             this.chunkIntervalId = null;

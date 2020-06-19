@@ -5,9 +5,13 @@ const { Logger } = require('./logger');
 const utils = require('./utils');
 
 module.exports.Connection = class Connection {
-    constructor(objType, options, externalLogger) {
+    constructor(objType, options, externalLogger, isVerbose = true) {
         this.id = options.id || `${objType}-${uuidv4()}`;
         this.logger = new Logger(externalLogger);
+        this.isVerbose = isVerbose;
+
+        if (this.isVerbose)
+            this.logger.log(`RabbitMQ ${this.id}: setting options: ${JSON.stringify(options)}`);
 
         this.options = { };
 
@@ -46,7 +50,7 @@ module.exports.Connection = class Connection {
             }
             catch (err) {
                 connUrl = null;
-                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.ctor()\", failed to create connUrl: ${err}`);
+                this.logger.log(`Error in RabbitMQ ${this.id}, Connection.ctor(), failed to create connUrl: ${err}`);
             }
         }
 
@@ -59,7 +63,7 @@ module.exports.Connection = class Connection {
                 this.conn = await amqp.connect(this.options.connUrl);
             }
             catch (err) {
-                this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", connUrl = \"${this.options.connUrl}\": ${err}`);
+                this.logger.log(`Error in RabbitMQ ${this.id}, Connection.initialize(), connUrl = ${this.options.connUrl}: ${err}`);
             }
 
             if (!_.isNil(this.conn)) {
@@ -67,15 +71,15 @@ module.exports.Connection = class Connection {
                     this.channel = await this.conn.createChannel();
                 }
                 catch (err) {
-                    this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\": ${err}`);
+                    this.logger.log(`Error in RabbitMQ ${this.id}, Connection.initialize(): ${err}`);
                 }
 
                 if (this.isReady()) {
                     this.conn.on('error', (err) => {
                         // Connection error handler
                         this.logger.log(
-                            `Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", \"${this.options.connUrl}\". ${err}. ` +
-                            `Connection problem.\n\nRECONNECTION by \"${this.id}\" to \"${this.options.connUrl}\"\n`);
+                            `Error in RabbitMQ ${this.id}, Connection.initialize(), ${this.options.connUrl}. ${err}. ` +
+                            `Connection problem.\n\nRECONNECTION by ${this.id} to ${this.options.connUrl}\n`);
 
                         // Async. reconnection
                         setImmediate(async () => await this.initialize());
@@ -88,11 +92,13 @@ module.exports.Connection = class Connection {
             }
         }
 
-        this.logger.log(`Error in RabbitMQ \"${this.id}\", \"Connection.initialize()\", \"${this.options.connUrl}\". ` +
+        this.logger.log(`Error in RabbitMQ ${this.id}, Connection.initialize(), ${this.options.connUrl}. ` +
                         'Failed to connect after max retries.');
     }
 
     stop() {
+        this.logger.log(`RabbitMQ ${this.id}: connection stop() called`);
+
         if (this.isReady()) {
             this.channel.close();
             this.conn.close();
