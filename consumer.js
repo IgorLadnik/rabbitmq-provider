@@ -55,9 +55,24 @@ module.exports.Consumer = class Consumer extends Connection {
     }
 
     ack(...msgs) {
-        if (!utils.isEmpty(msgs))
+        if (!this.isReady() && utils.isEmpty(msgs))
             utils.flatten(msgs).forEach(msg => this.channel.ack(msg));
     }
+
+    // ackAll() {
+    //     if (!this.isReady())
+    //         this.channel.ackAll();
+    // }
+
+    nack(...msgs) {
+        if (!this.isReady() && utils.isEmpty(msgs))
+            utils.flatten(msgs).forEach(msg => this.channel.nack(msg));
+    }
+
+    // nackAll() {
+    //     if (!this.isReady())
+    //         this.channel.nackAll();
+    // }
 
     static getJsonObject = msg => JSON.parse(`${msg.content}`);
 
@@ -88,25 +103,38 @@ module.exports.Consumer = class Consumer extends Connection {
                     this.logger.log(`RabbitMQ consumer ${this.id}: ` +
                         `message: ${JSON.stringify(arrPayloads[i])}, redelivered = ${arrRedelivered[i]}`);
 
+            // Process payload
+            let isOK = true;
             try {
-                if (!_.isNil(fnProcessChunk)) {
-                    fnProcessChunk(arrPayloads);
-
-                    if (this.isVerbose)
-                        this.logger.log(`RabbitMQ consumer ${this.id}: processing chunks called`);
-                }
-
-                this.messages.forEach(msg => this.ack(msg));
+                fnProcessChunk(arrPayloads);
 
                 if (this.isVerbose)
-                    this.logger.log(`RabbitMQ consumer ${this.id}: Ack. ${this.messages.length} messages`);
+                    this.logger.log(`RabbitMQ consumer ${this.id}: processing chunks called`);
             }
             catch (err) {
-                this.logger.log(`Error in RabbitMQ consumer ${this.id}, fnProcessChunk(): ${err}`);
+                isOK = false;
             }
-            finally {
-                this.messages = [];
+
+            // ack / nack
+            try {
+                if (isOK) {
+                    this.ack(this.messages);
+
+                    if (this.isVerbose)
+                        this.logger.log(`RabbitMQ consumer ${this.id}: Ack. ${this.messages.length} messages`);
+                }
+                else {
+                    this.nack(this.messages);
+
+                    if (this.isVerbose)
+                        this.logger.log(`RabbitMQ consumer ${this.id}: Negative Ack. ${this.messages.length} messages`);
+                }
             }
+            catch (err) {
+                this.logger.log(`Error in RabbitMQ consumer ${this.id}, ${isOK ? 'ack' : 'nack'}: ${err}`);
+            }
+
+            this.messages = [];
         },
         timeoutMs);
 
